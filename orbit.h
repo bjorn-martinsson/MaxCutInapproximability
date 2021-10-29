@@ -135,7 +135,7 @@ class OrbitInfo {
       }
       allOrbits.emplace_back(orbit);
     }
-    assert(edgesAdded.size() == (dimension << (dimension - 1)));
+    assert(edgesAdded.size() == ((int64_t)dimension << (dimension - 1)));
     return allOrbits;
   }
 

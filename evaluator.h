@@ -25,7 +25,7 @@ class Evaluator {
 
   PartialAssignment optimalRelaxedExtension(
       const PartialAssignment& partialAssignment, const Gadget<T>& gadget) {
-    using namespace lemon;
+    using lemon::ListDigraph;
 
     // Construct nodes in the graph
     ListDigraph g;
@@ -59,7 +59,7 @@ class Evaluator {
       }
     }
 
-    Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source,
+    lemon::Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source,
                                                          sink);
     preflow.runMinCut();
 
