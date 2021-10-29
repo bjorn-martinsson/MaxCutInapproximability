@@ -28,18 +28,19 @@ SOFTWARE.
 #include <algorithm>
 #include "rational.h"
 
-typedef Rational<T> LP_type;
-typedef std::vector<LP_type> vd;
-typedef std::vector<vd> vvd;
-typedef std::vector<int> vi;
-
-const LP_type inf = LP_type(1, 0);
 #define MP make_pair
 #define ltj(X) if(s == -1 || MP(X[j],N[j]) < MP(X[s],N[s])) s=j
 #define sz(x) (int)(x).size()
 #define rep(i, a, b) for(int i = a; i < (b); ++i)
 
+template<typename T>
 struct LPSolver {
+	typedef Rational<T> LP_type;
+  typedef std::vector<LP_type> vd;
+  typedef std::vector<vd> vvd;
+  typedef std::vector<int> vi;
+	const LP_type inf = LP_type(1, 0);
+	
 	int m, n;
 	vi N, B;
 	vvd D;
@@ -67,7 +68,7 @@ struct LPSolver {
 		rep(j,0,n+2) if (j != s) D[r][j] *= inv;
 		rep(i,0,m+2) if (i != r) D[i][s] *= -inv;
 		D[r][s] = inv;
-		swap(B[r], N[s]);
+    std::swap(B[r], N[s]);
 	}
 
 	bool simplex(int phase) {
