@@ -26,20 +26,32 @@ class Evaluator {
       const PartialAssignment& partialAssignment, const Gadget<T>& gadget) {
     using lemon::ListDigraph;
 
+    
+    auto edgeOrbits = orbitInfo.getAllEdgeOrbits();
+
+
     // Construct nodes in the graph
     ListDigraph g;
     auto source = g.addNode();
     auto sink = g.addNode();
-    std::vector<ListDigraph::Node> hypergraphNodes;
-    for (long long index = 0; index < n_nodes; index++) {
-      hypergraphNodes.emplace_back(g.addNode());
+    
+    std::map<long long, ListDigraph::Node> hypergraphNodes;
+    for (auto edgeOrbit : edgeOrbits) {
+      for (auto edge : edgeOrbit) {
+        long long index1 = edge.a.getIndex();
+        long long index2 = edge.b.getIndex();
+        if (!hypergraphNodes.count(index1))
+          hypergraphNodes[index1] = g.addNode();
+        if (!hypergraphNodes.count(index2))
+          hypergraphNodes[index2] = g.addNode();
+      }
     }
 
     // Compute the capacity of each edge in the graph
     ListDigraph::ArcMap<T> capacity(g);
     T totalWeight = 0;
     
-    for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits()) {
+    for (auto edgeOrbit : edgeOrbits) {
       for (auto edge : edgeOrbit) {
         Node node = edge.a;
         Node destination = edge.b;
@@ -53,15 +65,15 @@ class Evaluator {
         totalWeight += weight;
       }
     }
-  
-    for (long long index = 0; index < n_nodes; index++) {
+ 
+    for (auto [index, hyperNode] : hypergraphNodes) {
       Node node((uint32_t)index);
       if (partialAssignment.isAssigned(node)) {
         ListDigraph::Arc arc;
         if (partialAssignment.getValue(node)) {
-          arc = g.addArc(source, hypergraphNodes[node.getIndex()]);
+          arc = g.addArc(source, hyperNode);
         } else {
-          arc = g.addArc(hypergraphNodes[node.getIndex()], sink);
+          arc = g.addArc(hyperNode, sink);
         }
         capacity[arc] = totalWeight;
       }
@@ -72,10 +84,10 @@ class Evaluator {
     preflow.runMinCut();
 
     std::map<Node, bool> assignment;
-    for (long long index = 0; index < n_nodes; index++) {
+    for (auto [index, hyperNode] : hypergraphNodes) {
       Node node((uint32_t)index);
-      assignment[Node((uint32_t)index)] =
-          preflow.minCut(hypergraphNodes[index]);
+      assignment[node] =
+          preflow.minCut(hyperNode);
       if (partialAssignment.isAssigned(node)) {
         assert(partialAssignment.getValue(node) == assignment[node]);
       }
