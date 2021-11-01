@@ -4,7 +4,6 @@
 #include <lemon/preflow.h>
 
 #include <cstdint>
-#include <future>
 #include <map>
 #include <utility>
 #include <vector>
@@ -38,16 +37,25 @@ class Evaluator {
 
     // Compute the capacity of each edge in the graph
     ListDigraph::ArcMap<T> capacity(g);
+    T totalWeight = 0;
+    
+    for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits()) {
+      for (auto edge : edgeOrbit) {
+        Node node = edge.a;
+        Node destination = edge.b;
+        auto arc1 = g.addArc(hypergraphNodes[node.getIndex()],
+                            hypergraphNodes[destination.getIndex()]);
+        auto arc2 = g.addArc(hypergraphNodes[destination.getIndex()],
+                            hypergraphNodes[node.getIndex()]);
+        T weight = gadget.getWeight(edgeOrbit[0]);
+        capacity[arc1] = weight;
+        capacity[arc2] = weight;
+        totalWeight += weight;
+      }
+    }
+  
     for (long long index = 0; index < n_nodes; index++) {
       Node node((uint32_t)index);
-      for (unsigned direction = 0; direction < dimension; direction++) {
-        auto destination = node.getNeighbour(direction);
-        auto arc = g.addArc(hypergraphNodes[node.getIndex()],
-                            hypergraphNodes[destination.getIndex()]);
-        T weight = gadget.getWeight(Edge(node, destination));
-        capacity[arc] = weight;
-      }
-
       if (partialAssignment.isAssigned(node)) {
         ListDigraph::Arc arc;
         if (partialAssignment.getValue(node)) {
@@ -55,9 +63,29 @@ class Evaluator {
         } else {
           arc = g.addArc(hypergraphNodes[node.getIndex()], sink);
         }
-        capacity[arc] = gadget.getTotalWeight();
+        capacity[arc] = totalWeight;
       }
     }
+    //for (long long index = 0; index < n_nodes; index++) {
+    //  Node node((uint32_t)index);
+    //  for (unsigned direction = 0; direction < dimension; direction++) {
+    //    auto destination = node.getNeighbour(direction);
+    //    auto arc = g.addArc(hypergraphNodes[node.getIndex()],
+    //                        hypergraphNodes[destination.getIndex()]);
+    //    T weight = gadget.getWeight(Edge(node, destination));
+    //    capacity[arc] = weight;
+    //  }
+
+    //  if (partialAssignment.isAssigned(node)) {
+    //    ListDigraph::Arc arc;
+    //    if (partialAssignment.getValue(node)) {
+    //      arc = g.addArc(source, hypergraphNodes[node.getIndex()]);
+    //    } else {
+    //      arc = g.addArc(hypergraphNodes[node.getIndex()], sink);
+    //    }
+    //    capacity[arc] = gadget.getTotalWeight();
+    //  }
+    //}
 
     lemon::Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source,
                                                          sink);
@@ -91,13 +119,19 @@ class Evaluator {
           optimalRelaxedExtension(PartialAssignment(assignment), gadget);
       T value = 0;
 
-      for (long long index = 0; index < n_nodes; index++) {
-        Node node((uint32_t)index);
-        for (unsigned direction = 0; direction < dimension; direction++) {
-          auto destination = node.getNeighbour(direction);
-          if (extendedAssignment.getValue(node) >
+      for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits()) {
+        for (auto edge : edgeOrbit) {
+      //for (long long index = 0; index < n_nodes; index++) {
+        //Node node((uint32_t)index);
+        //for (unsigned direction = 0; direction < dimension; direction++) {
+          //auto destination = node.getNeighbour(direction);
+          Node node = edge.a;
+          Node destination = edge.b;
+          //if (extendedAssignment.getValue(node) >
+          //    extendedAssignment.getValue(destination)) {
+          if (extendedAssignment.getValue(node) !=
               extendedAssignment.getValue(destination)) {
-            value += gadget.getWeight(Edge(node, destination));
+            value += gadget.getWeight(Edge(edgeOrbit[0].a, edgeOrbit[0].b));
           }
         }
       }

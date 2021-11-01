@@ -25,7 +25,11 @@ int main() {
   std::cout << "Finished optimizing gadget" << std::endl;
 
   auto randomCost = evaluator.relaxedRandomCost(gadget);
-  auto dictCost = Rational<int_type>(gadget.getTotalWeight(), dimension);
+ 
+  int_type totalWeight = 0;
+  for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits())
+    totalWeight += edgeOrbit.size() * gadget.getWeight(edgeOrbit[0]);
+  auto dictCost = Rational<int_type>(totalWeight, dimension);
 
   auto inapproximabilityFactor = randomCost / dictCost;
 

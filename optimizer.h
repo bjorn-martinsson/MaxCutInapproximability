@@ -58,8 +58,8 @@ class Optimizer {
 
     // Construct initial gadget
     std::map<Edge, T> uniformGadgetWeights;
-    for (auto edge : orbitInfo.getAllEdges()) {
-      uniformGadgetWeights[edge] = 1;
+    for (auto edgeOrbit : edgeOrbits) {
+      uniformGadgetWeights[edgeOrbit[0]] = 1;
     }
     Gadget<T> gadget(uniformGadgetWeights);
 
@@ -114,11 +114,9 @@ class Optimizer {
 
       std::map<Edge, T> gadgetWeights;
       for (size_t i = 0; i < edgeOrbits.size(); i++) {
-        assert((solution[i].a * commonDenominator) % solution[i].b == 0);
-        T weight = (solution[i].a * commonDenominator) / solution[i].b;
-        for (auto edge : edgeOrbits[i]) {
-          gadgetWeights[edge] = weight;
-        }
+        assert(commonDenominator % solution[i].b == 0);
+        T weight = solution[i].a * (commonDenominator / solution[i].b);
+        gadgetWeights[edgeOrbits[i][0]] = weight;
       }
       gadget = Gadget<T>(gadgetWeights);
     }
