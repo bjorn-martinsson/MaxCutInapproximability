@@ -10,14 +10,29 @@ bool isPowerOfTwo(long long x) {
   return (x & (x - 1)) == 0;
 };
 
+bool isStructured(std::vector<long long> nodes) {
+  return true;
+}
+
+long long chi(long long S) {
+  long long z = 0;
+  for (unsigned i = 0; i < k; i++) {
+    if (S & (1 << i)) {
+      for (unsigned j = 0; j < dimension; j++) {
+        if (j & (1 << i)) {
+          z ^= 1u << j;
+        }
+      }
+    }
+  }
+  return z;
+}
+
 struct StructuredSet {
   size_t size = 0;
   long long affine_point = 0;
   std::vector<long long> basis;
 
- public:
-  //StructuredSet() {
-  //}
   long long reduce(long long node) {
     node ^= affine_point;
     for (auto b : basis)
@@ -54,6 +69,7 @@ std::vector<bool> getAllStructuredSets() {
   for (long long node = 0; node < n_nodes; ++node) {
     StructuredSet set;
     long long bitmask = node;
+
     for (long long tmp = 0; tmp < dimension; ++tmp) {
       for (long long i = 0; i < dimension; ++i) {
         if (((bitmask >> i) & 1LL) && set.canBeAdded(i)) {
@@ -62,8 +78,12 @@ std::vector<bool> getAllStructuredSets() {
         }
       }
     }
-    if (!bitmask)
-      ret[node] = true;
+    if (!bitmask) {
+      for (long long S = 0; S < dimension; ++S) {
+        ret[node ^ chi(S)] = true;
+        ret[node ^ (-Node(chi(S))).getIndex()] = true;
+      }
+    }
   }
   return ret;
 }

@@ -18,6 +18,7 @@ class OrbitInfo {
   std::vector<Edge> allEdges;
   std::vector<std::vector<Node>> nodeOrbits;
   std::vector<std::vector<Edge>> edgeOrbits;
+  std::vector<bool> usedNodes;
 
   void splitBasedOnType(int checkType) {
     // Computes how many neighbours of the checked type a given node has
@@ -70,22 +71,22 @@ class OrbitInfo {
       allNodes.emplace_back(index);
     }
   }
+  
+  void calcNodeOrbits() {
+    nodeOrbits.resize(numNodeTypes);
+    for (size_t node = 0; node < nodeType.size(); node++) {
+      nodeOrbits[nodeType[node]].emplace_back(node);
+    }
+  }
 
   void calcAllEdges() {
     for (long long index = 0; index < n_nodes; index++) {
       Node node((uint32_t)index);
       for (unsigned direction = 0; direction < dimension; direction++) {
         auto destination = node.getNeighbour(direction);
-        if (node < destination)
+        if (node < destination && usedNodes[node.getIndex()] && usedNodes[destination.getIndex()])
           allEdges.emplace_back(node, destination);
       }
-    }
-  }
-
-  void calcNodeOrbits() {
-    nodeOrbits.resize(numNodeTypes);
-    for (size_t node = 0; node < nodeType.size(); node++) {
-      nodeOrbits[nodeType[node]].emplace_back(node);
     }
   }
 
@@ -123,7 +124,7 @@ class OrbitInfo {
     return Node(z);
   }
 
-  OrbitInfo() {
+  OrbitInfo(std::vector<bool> usedNodes) : usedNodes(usedNodes) {
     // Start by splitting the set of nodes based on whether they belong to Z
     numNodeTypes = 2;
     nodeType = std::vector<uint8_t>(n_nodes, 1);
