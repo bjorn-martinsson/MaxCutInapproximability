@@ -13,6 +13,11 @@
 class OrbitInfo {
   uint8_t numNodeTypes;
   std::vector<uint8_t> nodeType;
+  
+  std::vector<Node> allNodes;
+  std::vector<Edge> allEdges;
+  std::vector<std::vector<Node>> nodeOrbits;
+  std::vector<std::vector<Edge>> edgeOrbits;
 
   void splitBasedOnType(int checkType) {
     // Computes how many neighbours of the checked type a given node has
@@ -59,6 +64,50 @@ class OrbitInfo {
     nodeType = move(newNodeType);
   }
 
+
+  void calcAllNodes() {
+    for (long long index = 0; index < n_nodes; index++) {
+      allNodes.emplace_back(index);
+    }
+  }
+
+  void calcAllEdges() {
+    for (long long index = 0; index < n_nodes; index++) {
+      Node node((uint32_t)index);
+      for (unsigned direction = 0; direction < dimension; direction++) {
+        auto destination = node.getNeighbour(direction);
+        if (node < destination)
+          allEdges.emplace_back(node, destination);
+      }
+    }
+  }
+
+  void calcNodeOrbits() {
+    nodeOrbits.resize(numNodeTypes);
+    for (size_t node = 0; node < nodeType.size(); node++) {
+      nodeOrbits[nodeType[node]].emplace_back(node);
+    }
+  }
+
+  void calcEdgeOrbits() {
+    std::map<std::pair<uint8_t,uint8_t>, std::vector<Edge>> allOrbits;
+    for (auto edge : allEdges) {
+      auto node = edge.a;
+      auto destination = edge.b;
+      auto type1 = nodeType[node.getIndex()];
+      auto type2 = nodeType[destination.getIndex()];
+      if (type1 > type2)
+        std::swap(type1, type2);
+      allOrbits[{type1, type2}].push_back(edge);
+    }
+    
+    for (auto [typepair, edgeOrbit] : allOrbits)
+      edgeOrbits.push_back(edgeOrbit);
+  }
+
+
+
+
  public:
   Node chi(uint32_t S) const {
     uint32_t z = 0;
@@ -86,90 +135,50 @@ class OrbitInfo {
     for (int checkType = 0; checkType < numNodeTypes; ++checkType) {
       // Split sets of nodes based on how many neighbours they have of type
       // checkType
-      splitBasedOnType(checkType);
+      splitBasedOnType(checkType);  
     }
+
+    calcAllNodes();
+    calcAllEdges();
+    calcNodeOrbits();
+    calcEdgeOrbits();
   }
 
   std::vector<Node> getAllNodes() const {
-    std::vector<Node> nodes;
-    for (long long index = 0; index < n_nodes; index++) {
-      nodes.emplace_back(index);
-    }
-    return nodes;
+    return allNodes;
   }
 
   std::vector<Edge> getAllEdges() const {
-    std::vector<Edge> edges;
-    for (long long index = 0; index < n_nodes; index++) {
-      Node node((uint32_t)index);
-      for (unsigned direction = 0; direction < dimension; direction++) {
-        if (index & (1LL << direction)) {
-          continue;
-        }
-        auto destination = node.getNeighbour(direction);
-        edges.emplace_back(node, destination);
-      }
-    }
-    return edges;
+    return allEdges;
   }
 
   std::vector<std::vector<Node>> getAllNodeOrbits() const {
-    std::vector<std::vector<Node>> allOrbits(numNodeTypes);
-    for (size_t node = 0; node < nodeType.size(); node++) {
-      allOrbits[nodeType[node]].emplace_back(node);
-    }
-    return allOrbits;
+    return nodeOrbits;
   }
 
   std::vector<std::vector<Edge>> getAllEdgeOrbits() const {
-    std::set<Edge> edgesAdded;
-    std::vector<std::vector<Edge>> allOrbits;
-    for (auto edge : getAllEdges()) {
-      if (edgesAdded.find(edge) != edgesAdded.end()) {
-        continue;
-      }
-      auto orbit = getOrbit(edge);
-      for (auto e : orbit) {
-        assert(edgesAdded.find(e) == edgesAdded.end());
-        edgesAdded.insert(e);
-      }
-      allOrbits.emplace_back(orbit);
-    }
-    assert(edgesAdded.size() == ((int64_t)dimension << (dimension - 1)));
-    return allOrbits;
+    return edgeOrbits;
   }
 
   std::vector<Node> getOrbit(const Node& representative) const {
     uint8_t type = nodeType[representative.getIndex()];
-
-    std::vector<Node> orbit;
-    for (size_t node = 0; node < nodeType.size(); node++) {
-      if (nodeType[node] == type) {
-        orbit.emplace_back(node);
-      }
-    }
-
-    return orbit;
+    
+    for (auto nodeOrbit : nodeOrbits)
+      if (nodeType[nodeOrbit[0].getIndex()] == type)
+        return nodeOrbit;
+    assert(false);
   }
 
   std::vector<Edge> getOrbit(const Edge& representative) const {
     uint8_t atype = nodeType[representative.a.getIndex()];
     uint8_t btype = nodeType[representative.b.getIndex()];
 
-    std::vector<Edge> orbit;
-    for (size_t node = 0; node < nodeType.size(); node++) {
-      if (nodeType[node] != atype) {
-        continue;
-      }
-      Node a((uint32_t)node);
-      for (int j = 0; j < dimension; j++) {
-        Node b = a.getNeighbour(j);
-        if (nodeType[b.getIndex()] == btype) {
-          orbit.emplace_back(a, b);
-        }
-      }
+    for (auto edgeOrbit : edgeOrbits) {
+      uint8_t atype2 = nodeType[edgeOrbit[0].a.getIndex()];
+      uint8_t btype2 = nodeType[edgeOrbit[0].b.getIndex()];
+      if ((atype == atype2 && btype == btype2) || (atype == btype2 && btype == atype2))
+        return edgeOrbit;
     }
-
-    return orbit;
+    assert(false);
   }
 };
