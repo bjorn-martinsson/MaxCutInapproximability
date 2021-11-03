@@ -15,13 +15,13 @@
 template <typename T>
 class Optimizer {
  public:
-  Gadget<T> gadgetSearch(const OrbitInfo& orbitInfo) {
-    Evaluator<T> evaluator(orbitInfo);
+  Gadget<T> gadgetSearch(const OrbitInfo& orbitInfo, const EdgeOrbitInfo& edgeOrbitInfo) {
+    Evaluator<T> evaluator(orbitInfo, edgeOrbitInfo);
 
     using U = Rational<T>;
 
-    auto edgeOrbits = orbitInfo.getAllEdgeOrbits();
-    auto nodeOrbits = orbitInfo.getAllNodeOrbits();
+    auto edgeOrbits = edgeOrbitInfo.edgeOrbits;
+    auto nodeOrbits = orbitInfo.nodeOrbits;
 
     // Construct initial linear program
     std::vector<std::vector<U>> A;
@@ -76,8 +76,8 @@ class Optimizer {
         Node representative = orbit[0];
         std::map<Node, bool> assignment;
         for (uint32_t S = 0; S < dimension; S++) {
-          assignment[orbitInfo.chi(S)] = (representative[S] == 1);
-          assignment[-orbitInfo.chi(S)] = !assignment[orbitInfo.chi(S)];
+          assignment[chi(S)] = (representative[S] == 1);
+          assignment[-chi(S)] = !assignment[chi(S)];
         }
 
         auto extendedAssignment =

@@ -7,18 +7,29 @@
 #include <vector>
 
 #include "config.h"
-#include "edge.h"
 #include "node.h"
 
-class OrbitInfo {
+Node chi(uint32_t S) {
+  uint32_t z = 0;
+  for (unsigned i = 0; i < k; i++) {
+    if (S & (1 << i)) {
+      for (unsigned j = 0; j < dimension; j++) {
+        if (j & (1 << i)) {
+          z ^= 1u << j;
+        }
+      }
+    }
+  }
+  return Node(z);
+}
+
+
+struct OrbitInfo {
   uint8_t numNodeTypes;
   std::vector<uint8_t> nodeType;
   
   std::vector<Node> allNodes;
-  std::vector<Edge> allEdges;
   std::vector<std::vector<Node>> nodeOrbits;
-  std::vector<std::vector<Edge>> edgeOrbits;
-  std::vector<bool> usedNodes;
 
   void splitBasedOnType(int checkType) {
     // Computes how many neighbours of the checked type a given node has
@@ -79,52 +90,7 @@ class OrbitInfo {
     }
   }
 
-  void calcAllEdges() {
-    for (long long index = 0; index < n_nodes; index++) {
-      Node node((uint32_t)index);
-      for (unsigned direction = 0; direction < dimension; direction++) {
-        auto destination = node.getNeighbour(direction);
-        if (node < destination && usedNodes[node.getIndex()] && usedNodes[destination.getIndex()])
-          allEdges.emplace_back(node, destination);
-      }
-    }
-  }
-
-  void calcEdgeOrbits() {
-    std::map<std::pair<uint8_t,uint8_t>, std::vector<Edge>> allOrbits;
-    for (auto edge : allEdges) {
-      auto node = edge.a;
-      auto destination = edge.b;
-      auto type1 = nodeType[node.getIndex()];
-      auto type2 = nodeType[destination.getIndex()];
-      if (type1 > type2)
-        std::swap(type1, type2);
-      allOrbits[{type1, type2}].push_back(edge);
-    }
-    
-    for (auto [typepair, edgeOrbit] : allOrbits)
-      edgeOrbits.push_back(edgeOrbit);
-  }
-
-
-
-
- public:
-  Node chi(uint32_t S) const {
-    uint32_t z = 0;
-    for (unsigned i = 0; i < k; i++) {
-      if (S & (1 << i)) {
-        for (unsigned j = 0; j < dimension; j++) {
-          if (j & (1 << i)) {
-            z ^= 1u << j;
-          }
-        }
-      }
-    }
-    return Node(z);
-  }
-
-  OrbitInfo(std::vector<bool> usedNodes) : usedNodes(usedNodes) {
+  OrbitInfo() {
     // Start by splitting the set of nodes based on whether they belong to Z
     numNodeTypes = 2;
     nodeType = std::vector<uint8_t>(n_nodes, 1);
@@ -140,25 +106,7 @@ class OrbitInfo {
     }
 
     calcAllNodes();
-    calcAllEdges();
     calcNodeOrbits();
-    calcEdgeOrbits();
-  }
-
-  std::vector<Node> getAllNodes() const {
-    return allNodes;
-  }
-
-  std::vector<Edge> getAllEdges() const {
-    return allEdges;
-  }
-
-  std::vector<std::vector<Node>> getAllNodeOrbits() const {
-    return nodeOrbits;
-  }
-
-  std::vector<std::vector<Edge>> getAllEdgeOrbits() const {
-    return edgeOrbits;
   }
 
   std::vector<Node> getOrbit(const Node& representative) const {
@@ -167,19 +115,6 @@ class OrbitInfo {
     for (auto nodeOrbit : nodeOrbits)
       if (nodeType[nodeOrbit[0].getIndex()] == type)
         return nodeOrbit;
-    assert(false);
-  }
-
-  std::vector<Edge> getOrbit(const Edge& representative) const {
-    uint8_t atype = nodeType[representative.a.getIndex()];
-    uint8_t btype = nodeType[representative.b.getIndex()];
-
-    for (auto edgeOrbit : edgeOrbits) {
-      uint8_t atype2 = nodeType[edgeOrbit[0].a.getIndex()];
-      uint8_t btype2 = nodeType[edgeOrbit[0].b.getIndex()];
-      if ((atype == atype2 && btype == btype2) || (atype == btype2 && btype == atype2))
-        return edgeOrbit;
-    }
     assert(false);
   }
 };

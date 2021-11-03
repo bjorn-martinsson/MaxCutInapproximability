@@ -13,31 +13,30 @@ using int_type = boost::multiprecision::cpp_int;
 #include "rational.h"
 
 int main() {
+  std::cout << "Analyzing orbits of the symmetry group..." << std::endl;
+  OrbitInfo orbitInfo;
+  
   std::cout << "Finding all structured sets" << std::endl;
-
-  std::vector<bool> structuredSets = getAllStructuredSets();
+  std::vector<bool> structuredSets = getAllStructuredSets(orbitInfo);
   long long i = 0;
   for (long long ind = 0; ind < n_nodes; ++ind)
     i += structuredSets[ind];
+  std::cout << "Found " << i << " nodes to consider" << std::endl;
 
-  std::cout << "Found " << i << " structured sets" << std::endl;
-
-  std::cout << "Analyzing orbits of the symmetry group..." << std::endl;
-
-  OrbitInfo orbitInfo(structuredSets);
+  EdgeOrbitInfo edgeOrbitInfo(orbitInfo, structuredSets);
   Optimizer<int_type> optimizer;
-  Evaluator<int_type> evaluator(orbitInfo);
+  Evaluator<int_type> evaluator(orbitInfo, edgeOrbitInfo);
 
   std::cout << "Optimizing gadget..." << std::endl;
 
-  auto gadget = optimizer.gadgetSearch(orbitInfo);
+  auto gadget = optimizer.gadgetSearch(orbitInfo, edgeOrbitInfo);
 
   std::cout << "Finished optimizing gadget" << std::endl;
 
   auto randomCost = evaluator.relaxedRandomCost(gadget);
  
   int_type totalWeight = 0;
-  for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits())
+  for (auto edgeOrbit : edgeOrbitInfo.edgeOrbits)
     totalWeight += edgeOrbit.size() * gadget.getWeight(edgeOrbit[0]);
   auto dictCost = Rational<int_type>(totalWeight, dimension);
 

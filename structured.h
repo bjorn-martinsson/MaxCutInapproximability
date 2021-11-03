@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "edge.h"
+#include "orbit.h"
 
 bool isPowerOfTwo(long long x) {
   return (x & (x - 1)) == 0;
@@ -12,20 +13,6 @@ bool isPowerOfTwo(long long x) {
 
 bool isStructured(std::vector<long long> nodes) {
   return true;
-}
-
-long long chi(long long S) {
-  long long z = 0;
-  for (unsigned i = 0; i < k; i++) {
-    if (S & (1 << i)) {
-      for (unsigned j = 0; j < dimension; j++) {
-        if (j & (1 << i)) {
-          z ^= 1u << j;
-        }
-      }
-    }
-  }
-  return z;
 }
 
 struct StructuredSet {
@@ -64,11 +51,17 @@ struct StructuredSet {
   }
 };
 
-std::vector<bool> getAllStructuredSets() {
+std::vector<bool> getAllStructuredSets(OrbitInfo orbitInfo) {
   std::vector<bool> ret(n_nodes);
   for (long long node = 0; node < n_nodes; ++node) {
     StructuredSet set;
     long long bitmask = node;
+
+    int s = 0;
+    for (int i = 0; i < dimension; ++i)
+      s += (bitmask >> i) & 1;
+    if (s > dimension/2)
+        continue;
 
     for (long long tmp = 0; tmp < dimension; ++tmp) {
       for (long long i = 0; i < dimension; ++i) {
@@ -80,8 +73,8 @@ std::vector<bool> getAllStructuredSets() {
     }
     if (!bitmask) {
       for (long long S = 0; S < dimension; ++S) {
-        ret[node ^ chi(S)] = true;
-        ret[node ^ (-Node(chi(S))).getIndex()] = true;
+        ret[node ^ chi(S).getIndex()] = true;
+        ret[node ^ (-chi(S)).getIndex()] = true;
       }
     }
   }

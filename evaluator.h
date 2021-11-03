@@ -18,16 +18,17 @@
 template <typename T>
 class Evaluator {
   OrbitInfo orbitInfo;
+  EdgeOrbitInfo edgeOrbitInfo;
 
  public:
-  Evaluator(const OrbitInfo orbitInfo) : orbitInfo(orbitInfo) {}
+  Evaluator(const OrbitInfo orbitInfo, const EdgeOrbitInfo edgeOrbitInfo) : orbitInfo(orbitInfo), edgeOrbitInfo(edgeOrbitInfo) {}
 
   PartialAssignment optimalRelaxedExtension(
       const PartialAssignment& partialAssignment, const Gadget<T>& gadget) {
     using lemon::ListDigraph;
 
     
-    auto edgeOrbits = orbitInfo.getAllEdgeOrbits();
+    auto edgeOrbits = edgeOrbitInfo.edgeOrbits;
 
 
     // Construct nodes in the graph
@@ -98,20 +99,20 @@ class Evaluator {
 
   Rational<T> relaxedRandomCost(const Gadget<T>& gadget) {
     T totalValue = 0;
-    auto allOrbits = orbitInfo.getAllNodeOrbits();
+    auto allOrbits = orbitInfo.nodeOrbits;
     for (const auto& orbit : allOrbits) {
       Node representative = orbit[0];
       std::map<Node, bool> assignment;
       for (uint32_t S = 0; S < dimension; S++) {
-        assignment[orbitInfo.chi(S)] = (representative[S] == 1);
-        assignment[-orbitInfo.chi(S)] = !assignment[orbitInfo.chi(S)];
+        assignment[chi(S)] = (representative[S] == 1);
+        assignment[-chi(S)] = !assignment[chi(S)];
       }
 
       auto extendedAssignment =
           optimalRelaxedExtension(PartialAssignment(assignment), gadget);
       T value = 0;
 
-      for (auto edgeOrbit : orbitInfo.getAllEdgeOrbits()) {
+      for (auto edgeOrbit : edgeOrbitInfo.edgeOrbits) {
         for (auto edge : edgeOrbit) {
           Node node = edge.a;
           Node destination = edge.b;
