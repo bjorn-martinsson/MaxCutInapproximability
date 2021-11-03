@@ -23,8 +23,29 @@ Node chi(uint32_t S) {
   return Node(z);
 }
 
+struct LinearBasis {
+  std::vector<uint32_t> basis;
+  
+  uint32_t reduce(uint32_t node) {
+    for (auto b : basis)
+      node = std::min(b ^ node, node);
+    return node;
+  }
+
+  void add(uint32_t node) {
+    node = reduce(node);
+    if (node) {
+      auto pos = std::lower_bound(basis.begin(), basis.end(), node, std::greater());
+      basis.insert(pos, node);
+    }
+  }
+};
+
 
 struct OrbitInfo {
+  LinearBasis linearBasis;
+  std::set<uint32_t> nodeRepresentatives;
+
   uint8_t numNodeTypes;
   std::vector<uint8_t> nodeType;
   
@@ -33,10 +54,10 @@ struct OrbitInfo {
 
   void splitBasedOnType(int checkType) {
     // Computes how many neighbours of the checked type a given node has
-    auto numberOfNeighboursOfType = [checkType, this](uint32_t node) {
+    auto numberOfNeighboursOfType = [&](uint32_t node) {
       int cnt = 0;
       for (int j = 0; j < dimension; j++) {
-        uint32_t neighbour = node ^ (1u << j);
+        uint32_t neighbour = linearBasis.reduce(node ^ (1u << j));
         if (nodeType[neighbour] == checkType) {
           cnt++;
         }
@@ -47,9 +68,11 @@ struct OrbitInfo {
     // Compute how many neighbours of the checked type that nodes of different
     // types have
     std::vector<std::set<int>> seenNeighbourCounts(numNodeTypes);
-    for (size_t i = 0; i < nodeType.size(); i++) {
-      seenNeighbourCounts[nodeType[i]].insert(
-          numberOfNeighboursOfType((uint32_t)i));
+    std::map<uint32_t, int> seenRepresentativeCounts;
+    for (auto i : nodeRepresentatives) {
+      auto seen = numberOfNeighboursOfType((uint32_t)i);
+      seenNeighbourCounts[nodeType[i]].insert(seen);
+      seenRepresentativeCounts[i] = seen;
     }
 
     // Compute what node type a node should get based on how many neighbours it
@@ -64,16 +87,10 @@ struct OrbitInfo {
       }
     }
 
-    std::vector<uint8_t> newNodeType(nodeType.size());
-
     // Update the node types
-    for (size_t i = 0; i < nodeType.size(); i++) {
-      newNodeType[i] =
-          countToNewNodeType[nodeType[i]]
-                            [numberOfNeighboursOfType((uint32_t)i)];
+    for (auto i : nodeRepresentatives) {
+      nodeType[i] = countToNewNodeType[nodeType[i]][seenRepresentativeCounts[i]];
     }
-
-    nodeType = move(newNodeType);
   }
 
 
@@ -91,13 +108,20 @@ struct OrbitInfo {
   }
 
   OrbitInfo() {
+    for (uint32_t S = 0; S < dimension; ++S) {
+      linearBasis.add(chi(S).getIndex());
+      linearBasis.add((-chi(S)).getIndex());
+    }
+
+    for (uint32_t node = 0; node < n_nodes; ++node)
+      nodeRepresentatives.insert(linearBasis.reduce(node));
+
+    std::cout << "Number of node representatives " << nodeRepresentatives.size() << std::endl;
+
     // Start by splitting the set of nodes based on whether they belong to Z
     numNodeTypes = 2;
     nodeType = std::vector<uint8_t>(n_nodes, 1);
-    for (uint32_t S = 0; S < dimension; S++) {
-      nodeType[chi(S).getIndex()] = 0;
-      nodeType[(-chi(S)).getIndex()] = 0;
-    }
+    nodeType[0] = 0;
 
     for (int checkType = 0; checkType < numNodeTypes; ++checkType) {
       // Split sets of nodes based on how many neighbours they have of type
@@ -105,8 +129,21 @@ struct OrbitInfo {
       splitBasedOnType(checkType);  
     }
 
+    for (uint32_t S = 0; S < dimension; ++S) {
+      uint32_t base = chi(S).getIndex();
+      uint32_t base2 = (-chi(S)).getIndex();
+      for (auto node : nodeRepresentatives) {
+        nodeType[node ^ base] = nodeType[node];
+        nodeType[node ^ base2] = nodeType[node];
+      }
+    }
+
     calcAllNodes();
     calcNodeOrbits();
+
+    std::cout << "Orbits found " << nodeOrbits.size() << std::endl;
+    //for (auto orbit : nodeOrbits)
+    //std::cout << "Orbit size " << orbit.size() << std::endl;
   }
 
   std::vector<Node> getOrbit(const Node& representative) const {
