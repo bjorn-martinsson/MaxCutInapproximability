@@ -11,10 +11,6 @@ bool isPowerOfTwo(long long x) {
   return (x & (x - 1)) == 0;
 };
 
-bool isStructured(std::vector<long long> nodes) {
-  return true;
-}
-
 struct StructuredSet {
   size_t size = 0;
   long long affine_point = 0;
@@ -44,39 +40,60 @@ struct StructuredSet {
     ++size;
     node = reduce(node);
     if (node) {
-      std::reverse(basis.begin(), basis.end());
-      basis.insert(std::lower_bound(basis.begin(), basis.end(), node), node);
-      std::reverse(basis.begin(), basis.end());
+      auto pos = std::lower_bound(basis.begin(), basis.end(), node, std::greater());
+      basis.insert(pos, node);
     }
   }
 };
 
-std::vector<bool> getAllStructuredSets(OrbitInfo orbitInfo) {
-  std::vector<bool> ret(n_nodes);
-  for (long long node = 0; node < n_nodes; ++node) {
-    StructuredSet set;
-    long long bitmask = node;
+bool isStructured(long long bitmask) {
+  long long bits = 0;
+  for (long long i = 0; i < dimension; ++i) {
+    bits += ((bitmask >> i) & 1LL);
+  }
+  if (bits > dimension/4)
+    return false;
 
-    int s = 0;
-    for (int i = 0; i < dimension; ++i)
-      s += (bitmask >> i) & 1;
-    if (s > dimension/2)
-        continue;
-
-    for (long long tmp = 0; tmp < dimension; ++tmp) {
-      for (long long i = 0; i < dimension; ++i) {
-        if (((bitmask >> i) & 1LL) && set.canBeAdded(i)) {
-          set.add(i);
-          bitmask ^= (1LL << i);
-        }
-      }
-    }
-    if (!bitmask) {
-      for (long long S = 0; S < dimension; ++S) {
-        ret[node ^ chi(S).getIndex()] = true;
-        ret[node ^ (-chi(S)).getIndex()] = true;
+  StructuredSet set;
+  for (long long tmp = 0; tmp < dimension; ++tmp) {
+    for (long long i = 0; i < dimension; ++i) {
+      if (((bitmask >> i) & 1LL) && set.canBeAdded(i)) {
+        set.add(i);
+        bitmask ^= (1LL << i);
       }
     }
   }
+  return bitmask == 0;
+}
+
+std::vector<bool> getAllStructuredSets() {
+  std::vector<bool> ret(n_nodes);
+  long long count = 0;
+  ret[0] = true;
+  for (long long node = 0; node < n_nodes; ++node) {
+    ret[node] = ret[node] && isStructured(node);
+    if (ret[node]) {
+      ++count;
+      for (long long i = 0; i < dimension; ++i) {
+        long long destination = node ^ (1LL << i);
+        if (destination > node)
+          ret[destination] = true;
+      }
+    }
+  }
+  
+  std::cout << "Found " << count << " structured sets" << std::endl;
+
+  for (long long i = 0; i < k; ++i) {
+    long long base = chi(1LL << i).getIndex();
+    for (long long node = 0; node < n_nodes; ++node) {
+      ret[node ^ base] = ret[node ^ base] || ret[node];
+    }
+  }
+
+  for (long long node = 0; node < n_nodes; ++node) {
+    ret[node] = ret[node] || ret[(-Node(node)).getIndex()];
+  }
+
   return ret;
 }

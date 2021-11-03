@@ -13,15 +13,15 @@ using int_type = boost::multiprecision::cpp_int;
 #include "rational.h"
 
 int main() {
-  std::cout << "Analyzing orbits of the symmetry group..." << std::endl;
-  OrbitInfo orbitInfo;
-  
   std::cout << "Finding all structured sets" << std::endl;
-  std::vector<bool> structuredSets = getAllStructuredSets(orbitInfo);
+  std::vector<bool> structuredSets = getAllStructuredSets();
   long long i = 0;
   for (long long ind = 0; ind < n_nodes; ++ind)
     i += structuredSets[ind];
   std::cout << "Found " << i << " nodes to consider" << std::endl;
+  
+  std::cout << "Analyzing orbits of the symmetry group..." << std::endl;
+  OrbitInfo orbitInfo;
 
   EdgeOrbitInfo edgeOrbitInfo(orbitInfo, structuredSets);
   Optimizer<int_type> optimizer;
