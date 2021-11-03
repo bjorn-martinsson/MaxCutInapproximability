@@ -46,41 +46,25 @@ struct StructuredSet {
   }
 };
 
-bool isStructured(long long bitmask) {
-  long long bits = 0;
-  for (long long i = 0; i < dimension; ++i) {
-    bits += ((bitmask >> i) & 1LL);
-  }
-  if (bits > dimension/4)
-    return false;
-
-  StructuredSet set;
-  for (long long tmp = 0; tmp < dimension; ++tmp) {
-    for (long long i = 0; i < dimension; ++i) {
-      if (((bitmask >> i) & 1LL) && set.canBeAdded(i)) {
-        set.add(i);
-        bitmask ^= (1LL << i);
-      }
-    }
-  }
-  return bitmask == 0;
-}
-
 std::vector<bool> getAllStructuredSets() {
   std::vector<bool> ret(n_nodes);
   long long count = 0;
-  ret[0] = true;
-  for (long long node = 0; node < n_nodes; ++node) {
-    ret[node] = ret[node] && isStructured(node);
-    if (ret[node]) {
-      ++count;
-      for (long long i = 0; i < dimension; ++i) {
-        long long destination = node ^ (1LL << i);
-        if (destination > node)
-          ret[destination] = true;
+  auto dfs = [&](auto&& self, StructuredSet structuredSet, long long node) {
+    if (structuredSet.size >= dimension/4) return;
+    for (long long i = 0; i < dimension; ++i) {
+      long long destination = node ^ (1LL << i);
+      if (destination > node && !ret[destination] && structuredSet.canBeAdded(i)) {
+        ret[destination] = true;
+        ++count;
+        StructuredSet tmp = structuredSet;
+        tmp.add(i);
+        self(self, tmp, destination);
       }
     }
-  }
+  };
+  ret[0] = true;
+  ++count;
+  dfs(dfs, {}, 0);
   
   std::cout << "Found " << count << " structured sets" << std::endl;
 
