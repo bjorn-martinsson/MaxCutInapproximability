@@ -7,7 +7,7 @@
 #include "edge.h"
 
 template <typename T>
-class Gadget {
+struct Gadget {
   std::map<Edge, T> weight;
   //T totalWeight;
 
@@ -29,3 +29,11 @@ class Gadget {
 
   bool operator==(const Gadget& other) { return weight == other.weight; }
 };
+
+template<typename T>
+std::ostream &operator<<(std::ostream &os, Gadget<T> const &gadget) { 
+  os << "Gadget of size " << gadget.weight.size() << std::endl;
+  for (auto [e, w] : gadget.weight)
+    os << "Gadget contains weight " << w << " with representative edge " << e.a.getIndex() << " " << e.b.getIndex() << std::endl;
+  return os;
+}

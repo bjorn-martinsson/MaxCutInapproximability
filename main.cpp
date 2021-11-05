@@ -32,6 +32,8 @@ int main() {
   auto gadget = optimizer.gadgetSearch(orbitInfo, edgeOrbitInfo);
 
   std::cout << "Finished optimizing gadget" << std::endl;
+  
+  std::cout << gadget;
 
   auto randomCost = evaluator.relaxedRandomCost(gadget);
  
@@ -41,7 +43,7 @@ int main() {
   auto dictCost = Rational<int_type>(totalWeight, dimension);
 
   auto inapproximabilityFactor = randomCost / dictCost;
-
+  
   std::cout << "The found gadget has inapproximability factor "
             << inapproximabilityFactor.a << "/" << inapproximabilityFactor.b
             << std::endl;

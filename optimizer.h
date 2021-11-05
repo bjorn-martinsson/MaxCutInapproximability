@@ -3,6 +3,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <chrono>
+#include <random>
 
 #include "config.h"
 #include "edge.h"
