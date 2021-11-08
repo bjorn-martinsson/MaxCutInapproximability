@@ -43,9 +43,10 @@ struct EdgeOrbitInfo {
   void calcAllEdges() {
     for (long long index = 0; index < n_nodes; index++) {
       Node node((uint32_t)index);
+      if (!usedNodes[node.getIndex()]) continue;
       for (unsigned direction = 0; direction < dimension; direction++) {
         auto destination = node.getNeighbour(direction);
-        if (node < destination && usedNodes[node.getIndex()] && usedNodes[destination.getIndex()])
+        if (node < destination && usedNodes[destination.getIndex()])
           allEdges.emplace_back(node, destination);
       }
     }
@@ -68,6 +69,8 @@ struct EdgeOrbitInfo {
   }
 
   EdgeOrbitInfo(OrbitInfo orbitInfo, std::vector<bool> usedNodes) : orbitInfo(orbitInfo), usedNodes(usedNodes) {
+    std::cout << "Checking usedNodes matches orbitals" << std::endl;
+
     for (auto &nodeOrbit : orbitInfo.nodeOrbits) {
       auto val = usedNodes[nodeOrbit.getRepresentative().getIndex()];
       for (auto node : nodeOrbit.getAllNodes()) {
@@ -75,7 +78,9 @@ struct EdgeOrbitInfo {
       }
     }
 
+    std::cout << "Generating all edges" << std::endl;
     calcAllEdges();
+    std::cout << "Generating all edge orbits" << std::endl;
     calcEdgeOrbits();
   }
 
