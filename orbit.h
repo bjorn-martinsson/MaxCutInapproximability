@@ -128,7 +128,7 @@ struct OrbitInfo {
     }
   }
 
-  NodeOrbit getOrbit(Node representative) {
+  const NodeOrbit& getOrbit(Node representative) {
     uint32_t node = linearBasis.reduce(representative.getIndex());
     for (auto &nodeOrbit : nodeOrbits) {
       if (nodeOrbit.nodeRepresentatives.count(node))
