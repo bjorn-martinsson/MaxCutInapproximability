@@ -24,12 +24,10 @@ class Evaluator {
   Evaluator(const OrbitInfo orbitInfo, const EdgeOrbitInfo edgeOrbitInfo) : orbitInfo(orbitInfo), edgeOrbitInfo(edgeOrbitInfo) {}
 
   PartialAssignment optimalRelaxedExtension(
-      const PartialAssignment& partialAssignment, const Gadget<T>& gadget) {
+      PartialAssignment partialAssignment, Gadget<T> gadget) {
     using lemon::ListDigraph;
 
-    
-    auto edgeOrbits = edgeOrbitInfo.edgeOrbits;
-
+    auto &edgeOrbits = edgeOrbitInfo.edgeOrbits;
 
     // Construct nodes in the graph
     ListDigraph g;
@@ -37,7 +35,7 @@ class Evaluator {
     auto sink = g.addNode();
     
     std::map<long long, ListDigraph::Node> hypergraphNodes;
-    for (auto edgeOrbit : edgeOrbits) {
+    for (auto &edgeOrbit : edgeOrbits) {
       for (auto edge : edgeOrbit) {
         long long index1 = edge.a.getIndex();
         long long index2 = edge.b.getIndex();
@@ -52,7 +50,7 @@ class Evaluator {
     ListDigraph::ArcMap<T> capacity(g);
     T totalWeight = 0;
     
-    for (auto edgeOrbit : edgeOrbits) {
+    for (auto &edgeOrbit : edgeOrbits) {
       for (auto edge : edgeOrbit) {
         Node node = edge.a;
         Node destination = edge.b;
@@ -80,8 +78,7 @@ class Evaluator {
       }
     }
 
-    lemon::Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source,
-                                                         sink);
+    lemon::Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source, sink);
     preflow.runMinCut();
 
     std::map<Node, bool> assignment;
@@ -94,14 +91,14 @@ class Evaluator {
       }
     }
 
-    return PartialAssignment(assignment);
+    return PartialAssignment(std::move(assignment));
   }
 
   Rational<T> relaxedRandomCost(const Gadget<T>& gadget) {
     T totalValue = 0;
-    auto allOrbits = orbitInfo.nodeOrbits;
-    for (const auto& orbit : allOrbits) {
-      Node representative = orbit[0];
+    auto &nodeOrbits = orbitInfo.nodeOrbits;
+    for (auto& nodeOrbit : nodeOrbits) {
+      Node representative = nodeOrbit.getRepresentative();
       std::map<Node, bool> assignment;
       for (uint32_t S = 0; S < dimension; S++) {
         assignment[chi(S)] = (representative[S] == 1);
@@ -112,7 +109,7 @@ class Evaluator {
           optimalRelaxedExtension(PartialAssignment(assignment), gadget);
       T value = 0;
 
-      for (auto edgeOrbit : edgeOrbitInfo.edgeOrbits) {
+      for (auto &edgeOrbit : edgeOrbitInfo.edgeOrbits) {
         for (auto edge : edgeOrbit) {
           Node node = edge.a;
           Node destination = edge.b;
@@ -123,7 +120,7 @@ class Evaluator {
         }
       }
 
-      totalValue += orbit.size() * value;
+      totalValue += nodeOrbit.size() * value;
     }
     return Rational<T>(totalValue, n_nodes);
   }

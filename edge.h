@@ -56,8 +56,8 @@ struct EdgeOrbitInfo {
     for (auto edge : allEdges) {
       auto node = edge.a;
       auto destination = edge.b;
-      auto type1 = orbitInfo.nodeType[node.getIndex()];
-      auto type2 = orbitInfo.nodeType[destination.getIndex()];
+      auto type1 = orbitInfo.getOrbit(node).nodeType;
+      auto type2 = orbitInfo.getOrbit(destination).nodeType;
       if (type1 > type2)
         std::swap(type1, type2);
       allOrbits[{type1, type2}].push_back(edge);
@@ -68,9 +68,9 @@ struct EdgeOrbitInfo {
   }
 
   EdgeOrbitInfo(OrbitInfo orbitInfo, std::vector<bool> usedNodes) : orbitInfo(orbitInfo), usedNodes(usedNodes) {
-    for (auto nodeOrbit : orbitInfo.nodeOrbits) {
-      auto val = usedNodes[nodeOrbit[0].getIndex()];
-      for (auto node : nodeOrbit) {
+    for (auto &nodeOrbit : orbitInfo.nodeOrbits) {
+      auto val = usedNodes[nodeOrbit.getRepresentative().getIndex()];
+      for (auto node : nodeOrbit.getAllNodes()) {
         assert(usedNodes[node.getIndex()] == val);
       }
     }
@@ -79,13 +79,13 @@ struct EdgeOrbitInfo {
     calcEdgeOrbits();
   }
 
-  std::vector<Edge> getOrbit(const Edge& representative) const {
-    uint8_t atype = orbitInfo.nodeType[representative.a.getIndex()];
-    uint8_t btype = orbitInfo.nodeType[representative.b.getIndex()];
+  std::vector<Edge> getOrbit(Edge representative) {
+    uint8_t atype = orbitInfo.getOrbit(representative.a).nodeType;
+    uint8_t btype = orbitInfo.getOrbit(representative.b).nodeType;
 
-    for (auto edgeOrbit : edgeOrbits) {
-      uint8_t atype2 = orbitInfo.nodeType[edgeOrbit[0].a.getIndex()];
-      uint8_t btype2 = orbitInfo.nodeType[edgeOrbit[0].b.getIndex()];
+    for (auto &edgeOrbit : edgeOrbits) {
+      uint8_t atype2 = orbitInfo.getOrbit(edgeOrbit[0].a).nodeType;
+      uint8_t btype2 = orbitInfo.getOrbit(edgeOrbit[0].b).nodeType;
       if ((atype == atype2 && btype == btype2) || (atype == btype2 && btype == atype2))
         return edgeOrbit;
     }

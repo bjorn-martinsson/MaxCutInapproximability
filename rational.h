@@ -122,3 +122,10 @@ struct Rational {
 
   bool operator!=(const T& other) const { return b * other != a; }
 };
+
+
+template<typename T>
+std::ostream &operator<<(std::ostream &os, Rational<T> const &rational) {
+  os << rational.a << "/" << rational.b;
+  return os;
+}
